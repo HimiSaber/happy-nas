@@ -127,20 +127,22 @@ RUN cd /repo/packages/happy-server \
     && cp -r prisma/migrations dist/prisma/migrations
 
 # Smoke test both migrate and serve so the image build fails if standalone runtime breaks.
+# The serve smoke test runs the server in background for a few seconds:
+# - if it exits early, print the captured log and fail the build
+# - if it stays alive, terminate it and continue
 RUN cd /repo/packages/happy-server/dist \
     && mkdir -p /tmp/happy-smoke-data \
     && HANDY_MASTER_SECRET=smoke-test-secret \
        DATA_DIR=/tmp/happy-smoke-data \
        PGLITE_DIR=/tmp/happy-smoke-data/pglite \
+       HAPPY_PRETTY_LOGS=false \
        ./happy-server migrate \
     && ./happy-server --help >/dev/null \
-    && code=0 \
     && HANDY_MASTER_SECRET=smoke-test-secret \
        DATA_DIR=/tmp/happy-smoke-data \
        PGLITE_DIR=/tmp/happy-smoke-data/pglite \
        HAPPY_PRETTY_LOGS=false \
-       timeout 10s ./happy-server serve >/tmp/happy-serve.log 2>&1 || code=$? \
-    && if [ "$code" != "0" ] && [ "$code" != "124" ]; then cat /tmp/happy-serve.log; exit "$code"; fi
+       sh -lc './happy-server serve >/tmp/happy-serve.log 2>&1 & pid=$!; sleep 8; if ! kill -0 "$pid" 2>/dev/null; then cat /tmp/happy-serve.log; wait "$pid"; exit $?; fi; kill "$pid" >/dev/null 2>&1 || true; wait "$pid" >/dev/null 2>&1 || true'
 
 FROM debian:bookworm-slim AS runner
 
