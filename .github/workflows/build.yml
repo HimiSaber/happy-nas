@@ -1,0 +1,75 @@
+name: build-and-push-happy-server
+
+on:
+  workflow_dispatch:
+    inputs:
+      happy_ref:
+        description: Happy upstream git ref (branch or tag)
+        required: true
+        default: main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image metadata
+        id: meta
+        shell: bash
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/happy-server"
+          REF="${{ github.event.inputs.happy_ref }}"
+          if [ -z "$REF" ]; then
+            REF="main"
+          fi
+          TAG=$(printf '%s' "$REF" | tr '/:@' '---')
+
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "happy_ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          {
+            echo 'tags<<EOF'
+            echo "$IMAGE:$TAG"
+            if [ "$REF" = "main" ]; then
+              echo "$IMAGE:latest"
+            fi
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            HAPPY_REPO=https://github.com/slopus/happy.git
+            HAPPY_REF=${{ steps.meta.outputs.happy_ref }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=Happy Server image for Synology/NAS deployment
+          tags: ${{ steps.meta.outputs.tags }}

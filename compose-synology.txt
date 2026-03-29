@@ -1,0 +1,19 @@
+services:
+  happy-server:
+    image: ghcr.io/himisaber/happy-server:latest
+    container_name: happy-server
+    restart: unless-stopped
+    ports:
+      - 3005:3005
+    environment:
+      - TZ=Asia/Shanghai
+      - NODE_ENV=production
+      - DB_PROVIDER=pglite
+      - HANDY_MASTER_SECRET=replace-with-a-long-random-secret
+      - PUBLIC_URL=http://YOUR_NAS_IP:3005
+      - PORT=3005
+      - DATA_DIR=/data
+      - PGLITE_DIR=/data/pglite
+      - DANGEROUSLY_LOG_TO_SERVER_FOR_AI_AUTO_DEBUGGING=false
+    volumes:
+      - /volume1/docker/happy/data:/data
