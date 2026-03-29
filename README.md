@@ -6,14 +6,32 @@ Minimal wrapper repository for building a Synology/NAS-friendly Happy Server ima
 
 - Builds an image for `linux/amd64` (x86 NAS / Synology)
 - Clones the upstream `slopus/happy` repository during image build
-- Packages `packages/happy-server` into a single GHCR image
-- Uses the standalone server flow so NAS deployment does **not** need local Postgres / Redis / S3
+- Builds **Happy Server standalone executable** instead of shipping full runtime `node_modules`
+- Packages only the compiled server binary plus required runtime assets (`pglite.wasm`, `pglite.data`, Prisma migrations)
 - Provides a simple Synology-friendly `compose.yaml`
 
-## Image
+## Why this wrapper exists
+
+Synology Container Manager is happiest when it only has to pull an image.
+This repo moves all building into GitHub Actions, then publishes:
 
 - `ghcr.io/himisaber/happy-server:latest`
 - `ghcr.io/himisaber/happy-server:main`
+
+The runtime image is based on a compiled standalone binary, so it avoids copying the whole monorepo workspace dependency tree into the final image.
+
+## Build details
+
+- Upstream source: `https://github.com/slopus/happy`
+- Build target: `bun-linux-x64-baseline`
+  - baseline is used intentionally for better compatibility with older x86 NAS CPUs
+- Runtime still includes:
+  - `ffmpeg`
+  - `ca-certificates`
+  - Happy Server standalone binary
+  - `pglite.wasm`
+  - `pglite.data`
+  - Prisma migrations
 
 ## How to update Happy Server
 
@@ -28,14 +46,14 @@ Minimal wrapper repository for building a Synology/NAS-friendly Happy Server ima
 - Create `/volume1/docker/happy/data`
 - Copy `compose.yaml` into Synology Container Manager
 - Replace `HANDY_MASTER_SECRET`
-- Replace `PUBLIC_URL`
+- `PUBLIC_URL` is optional; if you have a reverse proxy in front, you can leave it unset initially
 - Deploy
 
 ## Notes
 
-- The container starts with:
-  - `yarn --cwd packages/happy-server standalone migrate`
-  - then `yarn --cwd packages/happy-server standalone serve`
+- Container startup runs:
+  - `./happy-server migrate`
+  - then `./happy-server serve`
 - Storage defaults:
   - PGlite in `/data/pglite`
   - local files in `/data/files`
