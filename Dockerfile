@@ -37,7 +37,9 @@ transports.push({
 });
 """
 new_block = """const transports: any[] = [];
-const enablePrettyTransport = process.env.HAPPY_PRETTY_LOGS === 'true' || (process.env.NODE_ENV || '').trim() !== 'production';
+const happyPrettyLogs = (process.env.HAPPY_PRETTY_LOGS || '').trim().toLowerCase();
+const enablePrettyTransport = happyPrettyLogs === 'true'
+    || (happyPrettyLogs !== 'false' && (process.env.NODE_ENV || '').trim() !== 'production');
 
 if (enablePrettyTransport) {
     // Resolve pino-pretty target - use absolute path for bundled binaries
@@ -132,13 +134,15 @@ RUN cd /repo/packages/happy-server \
 # - if it stays alive, terminate it and continue
 RUN cd /repo/packages/happy-server/dist \
     && mkdir -p /tmp/happy-smoke-data \
-    && HANDY_MASTER_SECRET=smoke-test-secret \
+    && NODE_ENV=production \
+       HANDY_MASTER_SECRET=smoke-test-secret \
        DATA_DIR=/tmp/happy-smoke-data \
        PGLITE_DIR=/tmp/happy-smoke-data/pglite \
        HAPPY_PRETTY_LOGS=false \
        ./happy-server migrate \
     && ./happy-server --help >/dev/null \
-    && HANDY_MASTER_SECRET=smoke-test-secret \
+    && NODE_ENV=production \
+       HANDY_MASTER_SECRET=smoke-test-secret \
        DATA_DIR=/tmp/happy-smoke-data \
        PGLITE_DIR=/tmp/happy-smoke-data/pglite \
        HAPPY_PRETTY_LOGS=false \
