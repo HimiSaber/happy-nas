@@ -32,6 +32,7 @@ The runtime image is based on a compiled standalone binary, so it avoids copying
   - `pglite.wasm`
   - `pglite.data`
   - Prisma migrations
+- Logging defaults to plain stdout JSON in production/NAS builds (`HAPPY_PRETTY_LOGS=false`) to avoid `pino-pretty` transport issues inside the compiled standalone binary
 
 ## How to update Happy Server
 
