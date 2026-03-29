@@ -4,7 +4,7 @@ Minimal wrapper repository for building a Synology/NAS-friendly Happy Server ima
 
 ## What this repo does
 
-- Builds a multi-arch image for `linux/amd64` and `linux/arm64`
+- Builds an image for `linux/amd64` (x86 NAS / Synology)
 - Clones the upstream `slopus/happy` repository during image build
 - Packages `packages/happy-server` into a single GHCR image
 - Uses the standalone server flow so NAS deployment does **not** need local Postgres / Redis / S3

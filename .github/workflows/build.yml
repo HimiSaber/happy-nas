@@ -65,7 +65,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           build-args: |
             HAPPY_REPO=https://github.com/slopus/happy.git
             HAPPY_REF=${{ steps.meta.outputs.happy_ref }}
